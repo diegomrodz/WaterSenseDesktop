@@ -1,29 +1,32 @@
 {
-  "name" : "WaterSenseDesktop",
+  "name": "WaterSenseDesktop",
   "license": "MIT",
   "description": "Desktop Application for the Water Sense Project",
-  "author" : "Diego Rodrigues <diego.mrodrigues@outlook.com>",
+  "author": "Diego Rodrigues <diego.mrodrigues@outlook.com>",
   "repository": {
     "type": "git",
     "url": "https://github.com/diegomrodz/WaterSenseDesktop"
   },
   "contributors": [
     {
-      "name" : "Stéfani Pastre",
-      "email" : ""
+      "name": "Stéfani Pastre",
+      "email": ""
     },
     {
-      "name" : "Gustavo Cassetari",
-      "email" : ""
+      "name": "Gustavo Cassetari",
+      "email": ""
     },
     {
-      "name" : "Rodrigo Akira",
-      "email" : ""
+      "name": "Rodrigo Akira",
+      "email": ""
     },
     {
-      "name" : "Yuri Yasuda",
-      "email" : ""
+      "name": "Yuri Yasuda",
+      "email": ""
     }
   ],
-  "main" : "src/index.html"
+  "main": "index.html",
+  "devDependencies": {
+    "serialport": "^2.1.0"
+  }
 }
