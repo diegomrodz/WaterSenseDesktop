@@ -650,3 +650,7 @@ body {
       border-radius:10px;
    }  
 }
+
+svg{
+    width: 100% !important
+}

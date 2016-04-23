@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Bootstrap Admin Theme v3</title>
+    <title>Water Sense Desktop</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <!-- Bootstrap -->
@@ -9,6 +9,7 @@
     <!-- styles -->
     <link href="assets/css/styles.css" rel="stylesheet">
 
+    <link href="assets/vendors/morris/morris.css" rel="stylesheet">
     <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
     <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
     <!--[if lt IE 9]>
@@ -33,16 +34,46 @@
 <div class="page-content">
     <div class="row">
 
-        <div class="col-sm-8"></div>
+        <div class="col-sm-8">
 
-        <div class="col-sm-4">
+                <div class="content-box">
+                    <div class="panel-head">
+                        <span class="panel-title">Servidor Status</span>
+                    </div>
+
+                    <div class="panel-body">
+                        Servidor: OK
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="col-sm-8" id="MainPlotPanel" >
+
+                <div class="content-box">
+                    <div class="panel-head">
+                        <span class="panel-title">Medições Tempo Real</span>
+                    </div>
+
+                    <div class="panel-body">
+
+                        <div id="MainPlotChart" style="height: 320px;"></div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+        <div class="col-sm-4" id="LastMeasurementsPanel" style="top:-120px;">
             <div class="content-box">
                 <div class="panel-head">
                     <span class="panel-title">Temperatura Externa</span>
                 </div>
 
                 <div class="panel-body">
-                    Última Medição: 26.89ºC
+                    <p id="LastMeasurementsPanel-ExternalTemperatureLabel">Última Medição: 26.89ºC</p>
                 </div>
             </div>
 
@@ -52,7 +83,7 @@
                 </div>
 
                 <div class="panel-body">
-                    Última Medição: 26.89ºC
+                    <p id="LastMeasurementsPanel-WaterTemperatureLabel">Última Medição: 26.89ºC</p>
                 </div>
             </div>
 
@@ -62,7 +93,7 @@
                 </div>
 
                 <div class="panel-body">
-                    Última Medição: 26.89ºC
+                    <p id="LastMeasurementsPanel-LuminosityLabel">Última Medição: 250.98</p>
                 </div>
             </div>
         </div>
@@ -75,6 +106,8 @@
 <script src="assets/vendors/jquery/jquery.js"></script>
 <!-- Include all compiled plugins (below), or include individual files as needed -->
 <script src="assets/bootstrap/js/bootstrap.min.js"></script>
+<script src="assets/vendors/raphael/raphael-min.js"></script>
+<script src="assets/vendors/morris/morris.min.js"></script>
 <script src="assets/js/custom.js"></script>
 <script src="src/index.js"></script>
 </body>
