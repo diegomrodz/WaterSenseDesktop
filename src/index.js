@@ -1,5 +1,5 @@
 (function ($, Morris) {
-    //var SerialPort = require('serialport').SerialPort;
+    var SerialPort = require('serialport').SerialPort;
 
     var NWGui = require('nw.gui');
     var NWWindow = NWGui.Window.get();
@@ -102,6 +102,8 @@
         // ID do elemento html da gráfico
         MainPlotPanelWidget.prototype.CHART_ID = "MainPlotChart";
 
+        MainPlotPanelWidget.prototype.MAX_DATA_LENGTH = 15;
+
         // Elemento html do gráfico
         MainPlotPanelWidget.prototype.chart = undefined;
 
@@ -151,6 +153,10 @@
                 "measurement" : value,
                 "timestamp" : (new Date()).getTime()
             });
+
+            if (this.graphs[graphName].length > this.MAX_DATA_LENGTH) {
+                this.graphs[graphName].splice(0, this.graphs[graphName].length - this.MAX_DATA_LENGTH);
+            }
         };
 
         /**
@@ -163,6 +169,46 @@
         };
 
         return MainPlotPanelWidget;
+    }());
+
+    var SensorSignalSender = (function () {
+        var SensorSignalSender = new Function();
+
+        SensorSignalSender.prototype.sensorSignal = undefined;
+
+        SensorSignalSender.prototype.hostURL = undefined;
+
+        SensorSignalSender.prototype.requestDoneCounter = 0;
+        SensorSignalSender.prototype.requestSuccessCounter = 0;
+        SensorSignalSender.prototype.requestFailedCounter = 0;
+
+        SensorSignalSender.prototype.init = function (host) {
+            this.hostURL = host;
+        };
+
+        SensorSignalSender.prototype.update = function (sensorSignal) {
+            this.sensorSignal = sensorSignal;
+        };
+
+        SensorSignalSender.prototype.send = function () {
+            var bag = {}, post;
+
+            bag["signal"] = this.sensorSignal.to_json();
+
+            post = $.ajax({
+                url: this.hostURL + "/api/v1/send/sensor_signal",
+                method: "POST",
+                dataType: "json",
+                data: bag
+            });
+
+            post.done(function () {
+                this.requestDoneCounter += 1;
+                console.log("Requisição:" + this.requestDoneCounter);
+            });
+        };
+
+        return SensorSignalSender;
     }());
 
     /**
@@ -182,6 +228,16 @@
         SensorSignal.prototype.externalTemperature = undefined;
         SensorSignal.prototype.waterTemperature = undefined;
         SensorSignal.prototype.luminosity = undefined;
+
+        SensorSignal.prototype.to_json = function () {
+            var json = {};
+
+            json["ext_temp"] = this.externalTemperature;
+            json["water_temp"] = this.waterTemperature;
+            json["luminosity"] = this.luminosity;
+
+            return json;
+        };
 
         /**
          * public method digestSignal
@@ -209,6 +265,71 @@
     }());
 
     /**
+     * private class SerialPortListener
+     *
+     * Classe responsável por escutar a porta serial.
+     * */
+    var SerialPortListener = (function () {
+        var SerialPortListener = new Function();
+
+        // Constantes de configuração do serialport
+        SerialPortListener.prototype.SERIAL_PORT = undefined;
+        SerialPortListener.prototype.BAUD_RATE = undefined;
+
+        // Instância da serialport.SerialPort
+        SerialPortListener.prototype.serialPort = undefined;
+
+        /**
+         * public method onOpen
+         *
+         * Atribui uma função ao evento open do serialport
+         * */
+        SerialPortListener.prototype.onOpen = function (ctx, callback) {
+            this.serialPort.on('open', function (err) {
+                callback.call(ctx, err);
+            });
+        };
+
+        /**
+         * public method onClose
+         *
+         * Atribui uma função ao evento close do serialport
+         * */
+        SerialPortListener.prototype.onClose = function (ctx, callback) {
+            this.serialPort.on('close', function (err) {
+                callback.call(ctx, err);
+            });
+        };
+
+        /**
+         * public method onData
+         *
+         * Atribui uma função ao evento data do serialport
+         * */
+        SerialPortListener.prototype.onData = function (ctx, callback) {
+            this.serialPort.on('data', function (data) {
+                callback.call(ctx, data);
+            });
+        };
+
+        /**
+         * public method init
+         *
+         * Inicializa o serialport
+         * */
+        SerialPortListener.prototype.init = function (port, baudrate) {
+            var self = this;
+
+            this.serialPort = new SerialPort(port, {
+                baudrate: baudrate,
+                parser: require('serialport').parsers.readline('\n')
+            });
+        };
+
+        return SerialPortListener;
+    }());
+
+    /**
      * private class WaterSenseApplication
      *
      * Classe principal da aplicação
@@ -218,10 +339,17 @@
 
         // Porta serial lida pela aplicação
         WaterSenseApplication.prototype.DEFAULT_SERIAL_PORT = "COM3";
+        WaterSenseApplication.prototype.DEFAULT_BAUD_RATE = 9600;
 
         // Propriedades da janela
         WaterSenseApplication.prototype.WINDOW_WIDTH = 1024;
         WaterSenseApplication.prototype.WINDOW_HEIGHT = 600;
+
+        // URL do servidor na nuvem
+        WaterSenseApplication.prototype.HOST_URL = "http://localhost:1337";
+
+        // Flag que indetifica se a aplicação está usando o DummyDevice
+        WaterSenseApplication.prototype.isUsingDummyDevice = true;
 
         // Medida sendo plotada no momento
         WaterSenseApplication.prototype.plotedMeasurement = "externalTemperature";
@@ -235,6 +363,12 @@
 
         // Instância da classe DummyDevice
         WaterSenseApplication.prototype.dummyDevice = new DummyDevice();
+
+        // Instância da classe SensorSignalSender
+        WaterSenseApplication.prototype.sensorSignalSender = new SensorSignalSender();
+
+        // Instância da classe SensorPortListener
+        WaterSenseApplication.prototype.serialPortListener = new SerialPortListener();
 
         /**
          * private function plotExternalTemperatureBtn_Click
@@ -270,14 +404,47 @@
         };
 
         /**
+         * private method serialPortListener_Open
+         *
+         * Evento disparado quando a conexão serial é aberta
+         * */
+        function serialPortListener_Open (err) {
+        };
+
+        /**
+         * private method serialPortListener_Close
+         *
+         * Evento disparado quando a conexão serial é fechada
+         * */
+        function serialPortListener_Close (err) {
+            alert("The serial port connection has been closed");
+        };
+
+        /**
+         * private method serialPortListener_Data
+         *
+         * Evento disparado quando um dado é enviado para a porta serial
+         * */
+        function serialPortListener_Data (data) {
+            this.update(data);
+        };
+
+        /**
          * public method update
          *
          * Atualiza os widgets da aplicação
          * */
-        WaterSenseApplication.prototype.update = function () {
+        WaterSenseApplication.prototype.update = function (raw_signal) {
             var signal = new SensorSignal();
 
-            signal.digestSignal(this.dummyDevice.getSignal());
+            if (this.isUsingDummyDevice) {
+                signal.digestSignal(this.dummyDevice.getSignal());
+            } else {
+                signal.digestSignal(raw_signal);
+            }
+
+            //this.sensorSignalSender.update(signal);
+            //this.sensorSignalSender.send();
 
             // Atualiza dados do painel painel
             this.lastMeasurementPanel.updateExternalTemperature(signal.externalTemperature);
@@ -310,6 +477,8 @@
 
             NWWindow.moveTo(0, 0);
 
+            this.sensorSignalSender.init(this.HOST_URL);
+
             this.mainPlotPanel.start();
 
             // Inicializa um gráfico para cada medida
@@ -317,6 +486,7 @@
             this.mainPlotPanel.initGraph("waterTemperature");
             this.mainPlotPanel.initGraph("luminosity");
 
+            // Defini eventos ao botões do lastMeasurementPanel
             this.lastMeasurementPanel.plotExternalTemperatureBtn.on('click', function () {
                 plotExternalTemperatureBtn_Click.call(self);
             });
@@ -329,9 +499,18 @@
                 plotLuminosityBtn_Click.call(self);
             });
 
-            setInterval(function () {
-                self.update();
-            }, 2000);
+            if (this.isUsingDummyDevice) {
+                window.setInterval(function () {
+                    self.update("");
+                }, 1000);
+            } else {
+                this.serialPortListener.init(this.DEFAULT_SERIAL_PORT, this.DEFAULT_BAUD_RATE);
+
+                // Defini os eventos do serialPortListener
+                this.serialPortListener.onOpen(self, serialPortListener_Open);
+                this.serialPortListener.onClose(self, serialPortListener_Close);
+                this.serialPortListener.onData(self, serialPortListener_Data);
+            }
         };
 
         return WaterSenseApplication;
