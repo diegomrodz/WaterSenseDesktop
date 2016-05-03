@@ -450,7 +450,7 @@
       <workItem from="1461364862898" duration="8918000" />
       <workItem from="1461502032626" duration="3529000" />
       <workItem from="1461619101616" duration="2159000" />
-      <workItem from="1461640125539" duration="6650000" />
+      <workItem from="1461640125539" duration="6642000" />
     </task>
     <task id="LOCAL-00001" summary="Added Bootstrap for UI + Setup JavaScript">
       <created>1461362579900</created>
@@ -463,7 +463,7 @@
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="32577000" />
+    <option name="totallyTimeSpent" value="32569000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="-8" y="-8" width="1382" height="744" extended-state="6" />
