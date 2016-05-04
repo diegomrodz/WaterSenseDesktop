@@ -12,6 +12,19 @@
     var DummyDevice = (function () {
         var DummyDevice = new Function();
 
+        DummyDevice.prototype.topExternalTemperature = 45;
+        DummyDevice.prototype.bottomExternalTemperature = -10;
+
+        DummyDevice.prototype.topWaterTemperature = 50;
+        DummyDevice.prototype.bottomWaterTemperature = -5;
+
+        DummyDevice.prototype.topLuminosity = 700;
+        DummyDevice.prototype.bottomLuminosity = 50;
+
+        DummyDevice.prototype.externalTemperature = undefined;
+        DummyDevice.prototype.waterTemperature = undefined;
+        DummyDevice.prototype.luminosity = undefined;
+
         /**
          * private function rand
          *
@@ -29,9 +42,25 @@
         DummyDevice.prototype.getSignal = function () {
             var signal = "";
 
-            signal += "TE:" + rand(20, 35).toPrecision(4) + ";";
-            signal += "TA:" + rand(15, 30).toPrecision(4) + ";";
-            signal += "LU:" + rand(120, 450).toPrecision(4) + ";";
+            if ( ! this.externalTemperature) {
+                this.externalTemperature = rand(this.bottomExternalTemperature, this.topExternalTemperature);
+            }
+
+            if ( ! this.waterTemperature) {
+                this.waterTemperature = rand(this.bottomWaterTemperature, this.topWaterTemperature);
+            }
+
+            if ( ! this.luminosity ) {
+                this.luminosity = rand(this.bottomLuminosity, this.topLuminosity);
+            }
+
+            this.externalTemperature += Math.random() > 0.5 ? Math.random() : -1 * Math.random();
+            this.waterTemperature += Math.random() > 0.5 ? Math.random() : -1 * Math.random();
+            this.luminosity += Math.random() > 0.5 ? Math.random() : -1 * Math.random();
+
+            signal += "TE:" + this.externalTemperature.toPrecision(4) + ";";
+            signal += "TA:" + this.waterTemperature.toPrecision(4) + ";";
+            signal += "LU:" + this.luminosity.toPrecision(4) + ";";
 
             return signal;
         };
@@ -89,6 +118,39 @@
         };
 
         return LastMeasurementsPanelWidget;
+    }());
+
+    var DeviceSettingsModalWidget = (function () {
+        var DeviceSettingsModalWidget = new Function();
+
+        DeviceSettingsModalWidget.prototype.dom = $("#DeviceSettingsModalWidget");
+
+        DeviceSettingsModalWidget.prototype.saveBtn = $("#DeviceSettingsModalWidget-SaveBtn");
+
+        DeviceSettingsModalWidget.prototype.ID = $("#DeviceSettingsModalWidget-ID");
+        DeviceSettingsModalWidget.prototype.serialPort = $("#DeviceSettingsModalWidget-SerialPort");
+        DeviceSettingsModalWidget.prototype.baudRate = $("#DeviceSettingsModalWidget-BaudRate");
+
+        DeviceSettingsModalWidget.prototype.TE = $("#DeviceSettingsModalWidget-TE");
+        DeviceSettingsModalWidget.prototype.TA = $("#DeviceSettingsModalWidget-TA");
+        DeviceSettingsModalWidget.prototype.LU = $("#DeviceSettingsModalWidget-LU");
+
+        DeviceSettingsModalWidget.prototype.show = function () {
+            this.dom.modal('show');
+        };
+        
+        return DeviceSettingsModalWidget;
+    }());
+
+    var MainNavbarWidget = (function () {
+        var MainNavbarWidget = new Function();
+
+        MainNavbarWidget.prototype.dom = $("#MainNavbarWidget");
+        
+        MainNavbarWidget.prototype.configDeviceBtn = $("#ConfigDeviceBtn");
+
+        
+        return MainNavbarWidget;
     }());
 
     /**
@@ -174,15 +236,17 @@
     var SensorSignalSender = (function () {
         var SensorSignalSender = new Function();
 
-        SensorSignalSender.prototype.sensorSignal = undefined;
-
+        SensorSignalSender.prototype.sensorID = undefined;
         SensorSignalSender.prototype.hostURL = undefined;
+
+        SensorSignalSender.prototype.sensorSignal = undefined;
 
         SensorSignalSender.prototype.requestDoneCounter = 0;
         SensorSignalSender.prototype.requestSuccessCounter = 0;
         SensorSignalSender.prototype.requestFailedCounter = 0;
 
-        SensorSignalSender.prototype.init = function (host) {
+        SensorSignalSender.prototype.init = function (sensor_id, host) {
+            this.sensorID = sensor_id;
             this.hostURL = host;
         };
 
@@ -191,20 +255,28 @@
         };
 
         SensorSignalSender.prototype.send = function () {
-            var bag = {}, post;
+            var signal, post;
 
-            bag["signal"] = this.sensorSignal.to_json();
+            signal = this.sensorSignal.to_json();
+            signal["sensor"] = this.sensorID;
 
             post = $.ajax({
-                url: this.hostURL + "/api/v1/send/sensor_signal",
+                url: this.hostURL + "/SensorSignal/create",
                 method: "POST",
                 dataType: "json",
-                data: bag
+                data: signal
+            });
+
+            post.error(function () {
+                this.requestFailedCounter += 1;
+            });
+
+            post.success(function () {
+                this.requestSuccessCounter += 1;
             });
 
             post.done(function () {
                 this.requestDoneCounter += 1;
-                console.log("Requisição:" + this.requestDoneCounter);
             });
         };
 
@@ -348,8 +420,14 @@
         // URL do servidor na nuvem
         WaterSenseApplication.prototype.HOST_URL = "http://localhost:1337";
 
+        WaterSenseApplication.prototype.SENSOR_ID = 1;
+
         // Flag que indetifica se a aplicação está usando o DummyDevice
         WaterSenseApplication.prototype.isUsingDummyDevice = true;
+
+        WaterSenseApplication.prototype.isExternalTemperatureSensorActive = true;
+        WaterSenseApplication.prototype.isWaterTemperatureSensorActive = true;
+        WaterSenseApplication.prototype.isLuminositySensorActive = true;
 
         // Medida sendo plotada no momento
         WaterSenseApplication.prototype.plotedMeasurement = "externalTemperature";
@@ -360,6 +438,8 @@
         // Instâncias dos widgets
         WaterSenseApplication.prototype.lastMeasurementPanel = new LastMeasurementsPanelWidget();
         WaterSenseApplication.prototype.mainPlotPanel = new MainPlotPanelWidget();
+        WaterSenseApplication.prototype.deviceSettingsModal = new DeviceSettingsModalWidget();
+        WaterSenseApplication.prototype.mainNavbar = new MainNavbarWidget();
 
         // Instância da classe DummyDevice
         WaterSenseApplication.prototype.dummyDevice = new DummyDevice();
@@ -429,6 +509,10 @@
             this.update(data);
         };
 
+        function configDeviceBtn_Click () {
+            this.deviceSettingsModal.show();
+        };
+        
         /**
          * public method update
          *
@@ -443,8 +527,8 @@
                 signal.digestSignal(raw_signal);
             }
 
-            //this.sensorSignalSender.update(signal);
-            //this.sensorSignalSender.send();
+            this.sensorSignalSender.update(signal);
+            this.sensorSignalSender.send();
 
             // Atualiza dados do painel painel
             this.lastMeasurementPanel.updateExternalTemperature(signal.externalTemperature);
@@ -477,7 +561,7 @@
 
             NWWindow.moveTo(0, 0);
 
-            this.sensorSignalSender.init(this.HOST_URL);
+            this.sensorSignalSender.init(this.SENSOR_ID, this.HOST_URL);
 
             this.mainPlotPanel.start();
 
@@ -485,6 +569,23 @@
             this.mainPlotPanel.initGraph("externalTemperature");
             this.mainPlotPanel.initGraph("waterTemperature");
             this.mainPlotPanel.initGraph("luminosity");
+
+            this.deviceSettingsModal.ID.val(this.SENSOR_ID);
+
+            this.deviceSettingsModal.baudRate.val(this.DEFAULT_BAUD_RATE);
+            this.deviceSettingsModal.serialPort.val(this.DEFAULT_SERIAL_PORT);
+
+            if (this.isExternalTemperatureSensorActive) {
+                this.deviceSettingsModal.TE.prop('checked', true);
+            }
+
+            if (this.isWaterTemperatureSensorActive) {
+                this.deviceSettingsModal.TA.prop('checked', true);
+            }
+
+            if (this.isLuminositySensorActive) {
+                this.deviceSettingsModal.LU.prop('checked', true);
+            }
 
             // Defini eventos ao botões do lastMeasurementPanel
             this.lastMeasurementPanel.plotExternalTemperatureBtn.on('click', function () {
@@ -497,6 +598,10 @@
 
             this.lastMeasurementPanel.plotLuminosityBtn.on('click', function () {
                 plotLuminosityBtn_Click.call(self);
+            });
+            
+            this.mainNavbar.configDeviceBtn.on('click', function () {
+                configDeviceBtn_Click.call(self);
             });
 
             if (this.isUsingDummyDevice) {

@@ -23,7 +23,7 @@
         <div class="row">
 
             <div class="col-sm-7">
-                <div class="navbar navbar-inverse" role="banner">
+                <div id="MainApplicationNavbarWidget" class="navbar navbar-inverse" role="banner">
                     <nav class="collapse navbar-collapse bs-navbar-collapse navbar-left" role="navigation">
                         <ul class="nav navbar-nav">
                             <li class="dropdown">
@@ -36,7 +36,7 @@
                             <li class="dropdown">
                                 <a href="#" class="dropdown-toggle" data-toggle="dropdown">Configurações <b class="caret"></b></a>
                                 <ul class="dropdown-menu animated fadeInUp">
-                                    <li><a href="#">Dispositivo</a></li>
+                                    <li><a id="ConfigDeviceBtn" href="#">Dispositivo</a></li>
                                     <li><a href="#">Servidor</a></li>
                                 </ul>
                             </li>
@@ -138,6 +138,62 @@
     </div>
 </div>
 
+
+<div id="DeviceSettingsModalWidget" class="modal fade" tabindex="-1" role="dialog">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
+                        aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title">Configurações do Dispositivo</h4>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="form-group col-sm-4">
+                        <label>ID</label>
+                        <input id="DeviceSettingsModalWidget-ID" readonly="readonly" class="form-control" value="78123" type="text">
+                    </div>
+                    <div class="form-group col-sm-4">
+                        <label>Porta Serial</label>
+                        <input id="DeviceSettingsModalWidget-SerialPort" class="form-control" type="text">
+                    </div>
+                    <div class="form-group col-sm-4">
+                        <label>Baud Rate</label>
+                        <input id="DeviceSettingsModalWidget-BaudRate" class="form-control" type="text">
+                    </div>
+
+                </div>
+                <div class="row">
+                    <div class="form-group col-sm-12">
+                        <label>Sensores Ativos</label>
+                        <div class="checkbox">
+                            <label>
+                                <input id="DeviceSettingsModalWidget-TE" type="checkbox">
+                                Temperatura Externa
+                            </label>
+                        </div>
+                        <div class="checkbox">
+                            <label>
+                                <input id="DeviceSettingsModalWidget-TA" type="checkbox">
+                                Temperatura Água
+                            </label>
+                        </div>
+                        <div class="checkbox">
+                            <label>
+                                <input id="DeviceSettingsModalWidget-LU" type="checkbox">
+                                Luminosidade
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                <button id="DeviceSettingsModalWidget-SaveBtn" type="button" class="btn btn-primary">Salvar</button>
+            </div>
+        </div>
+    </div>
+</div>
 
 <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
 <script src="assets/vendors/jquery/jquery.js"></script>
