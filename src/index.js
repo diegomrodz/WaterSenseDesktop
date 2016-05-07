@@ -607,7 +607,7 @@
             if (this.isUsingDummyDevice) {
                 window.setInterval(function () {
                     self.update("");
-                }, 1000);
+                }, 1000 * 15);
             } else {
                 this.serialPortListener.init(this.DEFAULT_SERIAL_PORT, this.DEFAULT_BAUD_RATE);
 
