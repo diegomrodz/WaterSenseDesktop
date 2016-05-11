@@ -21,9 +21,13 @@
         DummyDevice.prototype.topLuminosity = 700;
         DummyDevice.prototype.bottomLuminosity = 50;
 
+        DummyDevice.prototype.topPH = 14;
+        DummyDevice.prototype.bottomPH = 0;
+
         DummyDevice.prototype.externalTemperature = undefined;
         DummyDevice.prototype.waterTemperature = undefined;
         DummyDevice.prototype.luminosity = undefined;
+        DummyDevice.prototype.ph = undefined;
 
         /**
          * private function rand
@@ -54,13 +58,19 @@
                 this.luminosity = rand(this.bottomLuminosity, this.topLuminosity);
             }
 
+            if ( ! this.ph ) {
+                this.ph = rand(this.bottomPH, this.topPH);
+            }
+
             this.externalTemperature += Math.random() > 0.5 ? Math.random() : -1 * Math.random();
             this.waterTemperature += Math.random() > 0.5 ? Math.random() : -1 * Math.random();
             this.luminosity += Math.random() > 0.5 ? Math.random() : -1 * Math.random();
+            this.ph += Math.random() > 0.5 ? Math.random() : -1 * Math.random();
 
             signal += "TE:" + this.externalTemperature.toPrecision(4) + ";";
             signal += "TA:" + this.waterTemperature.toPrecision(4) + ";";
             signal += "LU:" + this.luminosity.toPrecision(4) + ";";
+            signal += "PH:" + this.ph.toPrecision(4) + ";";
 
             return signal;
         };
@@ -84,11 +94,13 @@
         LastMeasurementsPanelWidget.prototype.externalTemperature = $("#LastMeasurementsPanel-ExternalTemperatureLabel");
         LastMeasurementsPanelWidget.prototype.waterTemperature = $("#LastMeasurementsPanel-WaterTemperatureLabel");
         LastMeasurementsPanelWidget.prototype.luminosity = $("#LastMeasurementsPanel-LuminosityLabel");
+        LastMeasurementsPanelWidget.prototype.ph = $("#LastMeasurementsPanel-PHLabel");
 
         // Os elementos html dos botões que atualizam o gráfico com a medida selecionada
         LastMeasurementsPanelWidget.prototype.plotExternalTemperatureBtn = $("#LastMeasurementsPanel-PlotExternalTemperatureBtn");
         LastMeasurementsPanelWidget.prototype.plotWaterTemperatureBtn = $("#LastMeasurementsPanel-PlotWaterTemperatureBtn");
         LastMeasurementsPanelWidget.prototype.plotLuminosityBtn = $("#LastMeasurementsPanel-PlotLuminosityBtn");
+        LastMeasurementsPanelWidget.prototype.plotPHBtn = $("#LastMeasurementsPanel-PlotPHBtn");
 
         /**
          * public method updataExternalTemperature
@@ -115,6 +127,10 @@
          * */
         LastMeasurementsPanelWidget.prototype.updateLuminosity = function (luminosity) {
             this.luminosity.text("Última Medição: " + luminosity);
+        };
+
+        LastMeasurementsPanelWidget.prototype.updatePH = function (ph) {
+            this.ph.text("Última Medição: " + ph);
         };
 
         return LastMeasurementsPanelWidget;
@@ -149,7 +165,6 @@
         
         MainNavbarWidget.prototype.configDeviceBtn = $("#ConfigDeviceBtn");
 
-        
         return MainNavbarWidget;
     }());
 
@@ -295,11 +310,13 @@
         SensorSignal.prototype.CONST_EXT_TEMP_IDENTIFIER = "TE";
         SensorSignal.prototype.CONST_WATER_TEMP_IDENTIFIER = "TA";
         SensorSignal.prototype.CONST_LUMINOSITY_IDENTIFIER = "LU";
+        SensorSignal.prototype.CONST_PH_IDENTIFIER = "PH";
 
         // Variáveis públicas com os dados do sensor
         SensorSignal.prototype.externalTemperature = undefined;
         SensorSignal.prototype.waterTemperature = undefined;
         SensorSignal.prototype.luminosity = undefined;
+        SensorSignal.prototype.ph = undefined;
 
         SensorSignal.prototype.to_json = function () {
             var json = {};
@@ -307,6 +324,7 @@
             json["ext_temp"] = this.externalTemperature;
             json["water_temp"] = this.waterTemperature;
             json["luminosity"] = this.luminosity;
+            json["ph"] = this.ph;
 
             return json;
         };
@@ -329,6 +347,8 @@
                     this.waterTemperature = parseFloat(aux[1]);
                 } else if (aux[0] === this.CONST_LUMINOSITY_IDENTIFIER) {
                     this.luminosity = parseFloat(aux[1]);
+                } else if (aux[0] === this.CONST_PH_IDENTIFIER) {
+                    this.ph = parseFloat(aux[1]);
                 }
             }
         };
@@ -428,6 +448,7 @@
         WaterSenseApplication.prototype.isExternalTemperatureSensorActive = true;
         WaterSenseApplication.prototype.isWaterTemperatureSensorActive = true;
         WaterSenseApplication.prototype.isLuminositySensorActive = true;
+        WaterSenseApplication.prototype.isPHSensorActive = true;
 
         // Medida sendo plotada no momento
         WaterSenseApplication.prototype.plotedMeasurement = "externalTemperature";
@@ -483,6 +504,11 @@
             this.update();
         };
 
+        function plotPHBtn_Click () {
+            this.plotedMeasurement = "ph";
+            this.update();
+        };
+
         /**
          * private method serialPortListener_Open
          *
@@ -534,11 +560,13 @@
             this.lastMeasurementPanel.updateExternalTemperature(signal.externalTemperature);
             this.lastMeasurementPanel.updateWaterTemperature(signal.waterTemperature);
             this.lastMeasurementPanel.updateLuminosity(signal.luminosity);
+            this.lastMeasurementPanel.updatePH(signal.ph);
 
             // Insere os dados lidos no gráfico em tempo-real
             this.mainPlotPanel.insert("externalTemperature", signal.externalTemperature);
             this.mainPlotPanel.insert("waterTemperature", signal.waterTemperature);
             this.mainPlotPanel.insert("luminosity", signal.luminosity);
+            this.mainPlotPanel.insert("ph", signal.ph);
 
             this.mainPlotPanel.currentGraph = this.plotedMeasurement;
 
@@ -569,6 +597,7 @@
             this.mainPlotPanel.initGraph("externalTemperature");
             this.mainPlotPanel.initGraph("waterTemperature");
             this.mainPlotPanel.initGraph("luminosity");
+            this.mainPlotPanel.initGraph("ph");
 
             this.deviceSettingsModal.ID.val(this.SENSOR_ID);
 
@@ -599,7 +628,11 @@
             this.lastMeasurementPanel.plotLuminosityBtn.on('click', function () {
                 plotLuminosityBtn_Click.call(self);
             });
-            
+
+            this.lastMeasurementPanel.plotPHBtn.on('click', function () {
+                plotPHBtn_Click.call(self);
+            });
+
             this.mainNavbar.configDeviceBtn.on('click', function () {
                 configDeviceBtn_Click.call(self);
             });
