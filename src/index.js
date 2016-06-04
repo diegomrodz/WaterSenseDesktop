@@ -59,7 +59,7 @@
             }
 
             if ( ! this.ph ) {
-                this.ph = rand(this.bottomPH, this.topPH);
+                this.ph = 7.4;
             }
 
             this.externalTemperature += Math.random() > 0.5 ? Math.random() : -1 * Math.random();
@@ -438,17 +438,17 @@
         WaterSenseApplication.prototype.WINDOW_HEIGHT = 600;
 
         // URL do servidor na nuvem
-        WaterSenseApplication.prototype.HOST_URL = "http://localhost:1337";
+        WaterSenseApplication.prototype.HOST_URL = "http://water-sense.herokuapp.com";
 
-        WaterSenseApplication.prototype.SENSOR_ID = 1;
+        WaterSenseApplication.prototype.SENSOR_ID = 72;
 
         // Flag que indetifica se a aplicação está usando o DummyDevice
-        WaterSenseApplication.prototype.isUsingDummyDevice = true;
+        WaterSenseApplication.prototype.isUsingDummyDevice = false;
 
         WaterSenseApplication.prototype.isExternalTemperatureSensorActive = true;
         WaterSenseApplication.prototype.isWaterTemperatureSensorActive = true;
         WaterSenseApplication.prototype.isLuminositySensorActive = true;
-        WaterSenseApplication.prototype.isPHSensorActive = true;
+        WaterSenseApplication.prototype.isPHSensorActive = false;
 
         // Medida sendo plotada no momento
         WaterSenseApplication.prototype.plotedMeasurement = "externalTemperature";
@@ -533,6 +533,7 @@
          * */
         function serialPortListener_Data (data) {
             this.update(data);
+            console.log(data);
         };
 
         function configDeviceBtn_Click () {
@@ -556,18 +557,27 @@
             this.sensorSignalSender.update(signal);
             this.sensorSignalSender.send();
 
-            // Atualiza dados do painel painel
-            this.lastMeasurementPanel.updateExternalTemperature(signal.externalTemperature);
-            this.lastMeasurementPanel.updateWaterTemperature(signal.waterTemperature);
-            this.lastMeasurementPanel.updateLuminosity(signal.luminosity);
-            this.lastMeasurementPanel.updatePH(signal.ph);
-
-            // Insere os dados lidos no gráfico em tempo-real
-            this.mainPlotPanel.insert("externalTemperature", signal.externalTemperature);
-            this.mainPlotPanel.insert("waterTemperature", signal.waterTemperature);
-            this.mainPlotPanel.insert("luminosity", signal.luminosity);
-            this.mainPlotPanel.insert("ph", signal.ph);
-
+            // Atualiza dados do painel painel e insere os dados lidos no gráfico em tempo-real
+            if (this.isExternalTemperatureSensorActive) {
+                this.lastMeasurementPanel.updateExternalTemperature(signal.externalTemperature);
+                this.mainPlotPanel.insert("externalTemperature", signal.externalTemperature);
+            }
+            
+            if (this.isWaterTemperatureSensorActive) {
+                this.lastMeasurementPanel.updateWaterTemperature(signal.waterTemperature);
+                this.mainPlotPanel.insert("waterTemperature", signal.waterTemperature);
+            }
+            
+            if (this.isLuminositySensorActive) {
+                this.lastMeasurementPanel.updateLuminosity(signal.luminosity);
+                this.mainPlotPanel.insert("luminosity", signal.luminosity);
+            }
+            
+            if (this.isPHSensorActive) {
+                this.lastMeasurementPanel.updatePH(signal.ph);
+                this.mainPlotPanel.insert("ph", signal.ph);    
+            }
+            
             this.mainPlotPanel.currentGraph = this.plotedMeasurement;
 
             this.mainPlotPanel.update();
